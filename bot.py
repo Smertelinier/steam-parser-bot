@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from io import BytesIO
 from urllib.parse import quote
 
-from curl_cffi import requests
+import cloudscraper
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.types import BufferedInputFile, LabeledPrice, PreCheckoutQuery
@@ -136,7 +136,7 @@ def get_user_info(user_id):
     }
 
 
-_SCRAPER_SESSION = None
+_SCRAPER = cloudscraper.create_scraper()
 
 _AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
@@ -144,26 +144,18 @@ _AGENTS = [
 ]
 
 
-def _get_session():
-    global _SCRAPER_SESSION
-    if _SCRAPER_SESSION is None:
-        _SCRAPER_SESSION = requests.Session()
-    return _SCRAPER_SESSION
-
-
 async def _rate_limited_request(url, max_retries=3):
     global _LAST_STEAM_REQUEST
-    session = _get_session()
     for attempt in range(max_retries):
         now = datetime.now().timestamp()
         since_last = now - _LAST_STEAM_REQUEST
         if since_last < 2.0:
             await asyncio.sleep(2.0 - since_last)
         _LAST_STEAM_REQUEST = datetime.now().timestamp()
-        headers = {"User-Agent": random.choice(_AGENTS)}
+        _SCRAPER.headers.update({"User-Agent": random.choice(_AGENTS)})
         loop = asyncio.get_event_loop()
         resp = await loop.run_in_executor(
-            None, lambda: session.get(url, headers=headers, impersonate="chrome120", timeout=25)
+            None, lambda: _SCRAPER.get(url, timeout=25)
         )
         if resp.status_code == 200:
             return resp

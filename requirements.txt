@@ -1,5 +1,5 @@
 aiogram>=3.0
-curl_cffi>=1.2
+cloudscraper>=1.2
 openpyxl>=3.0
 beautifulsoup4>=4.0
 lxml
