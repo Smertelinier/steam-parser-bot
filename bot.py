@@ -14,10 +14,12 @@ from aiogram.types import BufferedInputFile, LabeledPrice, PreCheckoutQuery
 from bs4 import BeautifulSoup
 from openpyxl import Workbook
 
-TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
+TOKEN = os.getenv("BOT_TOKEN")
+if not TOKEN:
+    raise RuntimeError("BOT_TOKEN не задан в .env или переменных окружения")
 FREE_DAYS = 3
 PRICE = "300⭐/мес"
-ADMIN_ID = None
+ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
 
 USER_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "users.json")
 bot = Bot(token=TOKEN)
@@ -281,9 +283,12 @@ async def paid(message: types.Message):
     )
 
 
+def _is_admin(user_id: int) -> bool:
+    return ADMIN_ID > 0 and user_id == ADMIN_ID
+
 @dp.message(Command("admin"))
 async def cmd_admin(message: types.Message):
-    if message.from_user.username != "Saidikcs":
+    if not _is_admin(message.from_user.id):
         await message.answer("Нет доступа")
         return
     keyboard = types.InlineKeyboardMarkup(
@@ -300,7 +305,7 @@ async def cmd_admin(message: types.Message):
 
 @dp.callback_query(lambda c: c.data == "admin_users")
 async def admin_users(callback: types.CallbackQuery):
-    if callback.from_user.username != "Saidikcs":
+    if not _is_admin(callback.from_user.id):
         return
     users = _get_users()
     if not users:
@@ -318,7 +323,7 @@ async def admin_users(callback: types.CallbackQuery):
 
 @dp.callback_query(lambda c: c.data == "admin_extend")
 async def admin_extend(callback: types.CallbackQuery):
-    if callback.from_user.username != "Saidikcs":
+    if not _is_admin(callback.from_user.id):
         return
     await callback.message.edit_text(
         "Чтобы продлить пользователю подписку на месяц, напиши:\n"
@@ -330,7 +335,7 @@ async def admin_extend(callback: types.CallbackQuery):
 
 @dp.callback_query(lambda c: c.data == "admin_stats")
 async def admin_stats(callback: types.CallbackQuery):
-    if callback.from_user.username != "Saidikcs":
+    if not _is_admin(callback.from_user.id):
         return
     users = _get_users()
     total = len(users)
@@ -341,7 +346,7 @@ async def admin_stats(callback: types.CallbackQuery):
 
 @dp.message(Command("extend"))
 async def cmd_extend(message: types.Message):
-    if message.from_user.username != "Saidikcs":
+    if not _is_admin(message.from_user.id):
         return
     parts = message.text.split()
     if len(parts) < 2:
@@ -376,7 +381,7 @@ async def cmd_mytrial(message: types.Message):
 
 @dp.message(Command("stats"))
 async def cmd_stats(message: types.Message):
-    if message.from_user.username != "Saidikcs":
+    if not _is_admin(message.from_user.id):
         return
     users = _get_users()
     now = datetime.now()
@@ -413,7 +418,7 @@ async def cmd_stats(message: types.Message):
 
 @dp.message(Command("check"))
 async def cmd_check(message: types.Message):
-    if message.from_user.username != "Saidikcs":
+    if not _is_admin(message.from_user.id):
         return
     parts = message.text.split()
     if len(parts) < 2:
@@ -445,7 +450,7 @@ async def cmd_check(message: types.Message):
 
 @dp.message(Command("block"))
 async def cmd_block(message: types.Message):
-    if message.from_user.username != "Saidikcs":
+    if not _is_admin(message.from_user.id):
         return
     parts = message.text.split()
     if len(parts) < 2:
@@ -464,7 +469,7 @@ async def cmd_block(message: types.Message):
 
 @dp.message(Command("unblock"))
 async def cmd_unblock(message: types.Message):
-    if message.from_user.username != "Saidikcs":
+    if not _is_admin(message.from_user.id):
         return
     parts = message.text.split()
     if len(parts) < 2:
